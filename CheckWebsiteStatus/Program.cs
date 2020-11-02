@@ -27,7 +27,7 @@ namespace CheckWebsiteStatus
                 Logger.Log("successfully loaded configuration!");
                 Logger.Log("Load and start scheduler");
                 ISchedulerFactory schedulerFactory =
-                    new CustomSchedulerFactory<SchedulerJob>("job1", "group1", "trigger1", 120, configuration);
+                    new CustomSchedulerFactory<SchedulerJob>("job1", "group1", "trigger1", 600, configuration);
 
                 schedulerFactory.RunScheduler();
 
