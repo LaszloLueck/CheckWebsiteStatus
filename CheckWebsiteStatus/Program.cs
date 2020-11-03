@@ -29,7 +29,7 @@ namespace CheckWebsiteStatus
                     await Logger.Log("successfully loaded configuration!");
                     await Logger.Log("Load and start scheduler");
                     ISchedulerFactory schedulerFactory =
-                        new CustomSchedulerFactory<SchedulerJob>("job1", "group1", "trigger1", 600, configuration);
+                        new CustomSchedulerFactory<SchedulerJob>("job1", "group1", "trigger1", configuration);
 
                     await schedulerFactory.RunScheduler();
 

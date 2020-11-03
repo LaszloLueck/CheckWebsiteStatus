@@ -14,17 +14,15 @@ namespace CheckWebsiteStatus.Scheduler
         private readonly string _jobName;
         private readonly string _groupName;
         private readonly string _triggerName;
-        private readonly int _repeatIntervalInSeconds;
         private IScheduler _scheduler;
         private readonly StdSchedulerFactory _factory;
         private readonly ConfigurationItems _configurationItems;
 
-        public CustomSchedulerFactory(string jobName, string groupName, string triggerName, int repeatIntervalInSeconds, ConfigurationItems configurationItems)
+        public CustomSchedulerFactory(string jobName, string groupName, string triggerName, ConfigurationItems configurationItems)
         {
             _jobName = jobName;
             _groupName = groupName;
             _triggerName = triggerName;
-            _repeatIntervalInSeconds = repeatIntervalInSeconds;
             _configurationItems = configurationItems;
             _factory = new StdSchedulerFactory();
         }
@@ -57,7 +55,7 @@ namespace CheckWebsiteStatus.Scheduler
                 .Create()
                 .WithIdentity(_triggerName, _groupName)
                 .StartAt(dto)
-                .WithSimpleSchedule(x => x.WithIntervalInSeconds(_repeatIntervalInSeconds).RepeatForever())
+                .WithSimpleSchedule(x => x.WithIntervalInSeconds(_configurationItems.RunsEvery).RepeatForever())
                 .Build();
         }
 

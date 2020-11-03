@@ -1,16 +1,26 @@
 using CheckWebsiteStatus.SimpleLogger;
 using Optional;
+using Optional.Linq;
 
 namespace CheckWebsiteStatus.Configuration
 {
     public class ConfigurationItems
     {
-        public string SitemapUrl;
+        public readonly string SitemapUrl;
+        public readonly int RunsEvery;
+
+        public ConfigurationItems(string sitemapUrl, int runsEvery)
+        {
+            SitemapUrl = sitemapUrl;
+            RunsEvery = runsEvery;
+        }
+        
     }
 
     public enum EnvEntries
     {
-        SitemapUrl
+        SitemapUrl,
+        RunsEvery
     }
 
 
@@ -24,20 +34,27 @@ namespace CheckWebsiteStatus.Configuration
             _configurationFactory = configurationFactory;
         }
 
+        private Option<int> CheckEnvironmentOfInt(EnvEntries entryKey)
+        {
+            return _configurationFactory
+                .ReadEnvironmentVariable(entryKey.ToString())
+                .FlatMap(valueString => int.TryParse(valueString, out var valueInt) ? Option.Some(valueInt) : Option.None<int>());
+        }
+
+        private Option<string> CheckEnvironmentOfString(EnvEntries entryKey)
+        {
+            return _configurationFactory
+                .ReadEnvironmentVariable(entryKey.ToString());
+        }
+        
+
         public Option<ConfigurationItems> GetConfiguration()
         {
-            var returnItem = new ConfigurationItems();
-
-            return _configurationFactory.ReadEnvironmentVariable(EnvEntries.SitemapUrl.ToString()).Map(sitemapUrl =>
-            {
-                Logger.Log($"Successfully reading EnvironmentVariable {EnvEntries.SitemapUrl}");
-                returnItem.SitemapUrl = sitemapUrl;
-                return returnItem;
-            }).Else(() =>
-            {
-                Logger.Log($"Could not read EnvironmentVariable {EnvEntries.SitemapUrl}");
-                return Option.None<ConfigurationItems>();
-            });
+            return (
+                from sitemapUrl in CheckEnvironmentOfString(EnvEntries.SitemapUrl)
+                from runsEvery in CheckEnvironmentOfInt(EnvEntries.RunsEvery)
+                select new ConfigurationItems(sitemapUrl, runsEvery)
+            );
         }
     }
 }

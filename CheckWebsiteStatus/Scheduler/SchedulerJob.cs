@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Runtime.InteropServices.ComTypes;
 using System.Threading.Tasks;
 using System.Xml;
 using CheckWebsiteStatus.Configuration;
@@ -32,14 +30,7 @@ namespace CheckWebsiteStatus.Scheduler
             await Logger.Log($"Retrieve the sitemap with {retList.Count} items.");
             //Call each url in the list and print some header infos.
 
-            var parallelTasks = retList.AsParallel().Select(async url =>
-            {
-                var sw = Stopwatch.StartNew();
-                var response = await GetResultFromUrl(url);
-                sw.Stop();
-                await Logger.Log($"{sw.ElapsedMilliseconds} ms :: GET {url}");
-                return response;
-            });
+            var parallelTasks = retList.AsParallel().Select(async url => await GetResultFromUrl(url));
 
             var htmlNodes = (await Task.WhenAll(parallelTasks))
                 .SelectMany(x => x)
@@ -124,8 +115,10 @@ namespace CheckWebsiteStatus.Scheduler
 
         private static async Task<IEnumerable<HtmlNode>> GetResultFromUrl(string url)
         {
+            var sw = Stopwatch.StartNew();
             var response = await GetResponseFromUri(url,
                 "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9");
+            sw.Stop();
             var headers = response.Headers;
             var status = response.StatusCode;
             if (status != HttpStatusCode.OK) return new List<HtmlNode>();
@@ -136,7 +129,7 @@ namespace CheckWebsiteStatus.Scheduler
             doc.OptionEmptyCollection = true;
 
             await Logger.Log(
-                $"GET {url} :: {status.ToString()} : C {headers["cf-cache-status"]} : S {doc.Text.Length}");
+                $"{sw.ElapsedMilliseconds}ms :: GET {url} :: {status.ToString()} : C {headers["cf-cache-status"]} : S {doc.Text.Length}");
 
 
             response.Close();
