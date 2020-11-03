@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -24,20 +25,27 @@ namespace CheckWebsiteStatus.Scheduler
             var configuration = (ConfigurationItems) context.JobDetail.JobDataMap["configuration"];
 
 
-            Logger.Log("Fire the scheduled event!");
+            await Logger.Log("Fire the scheduled event!");
             //Read the XML-Sitemap
             var retList = RetrieveSitemapItems(configuration.SitemapUrl);
 
-            Logger.Log($"Retrieve the sitemap with {retList.Count} items.");
+            await Logger.Log($"Retrieve the sitemap with {retList.Count} items.");
             //Call each url in the list and print some header infos.
 
-            var parallelTasks = retList.AsParallel().Select(async url => await GetResultFromUrl(url));
+            var parallelTasks = retList.AsParallel().Select(async url =>
+            {
+                var sw = Stopwatch.StartNew();
+                var response = await GetResultFromUrl(url);
+                sw.Stop();
+                await Logger.Log($"{sw.ElapsedMilliseconds} ms :: GET {url}");
+                return response;
+            });
 
             var htmlNodes = (await Task.WhenAll(parallelTasks))
                 .SelectMany(x => x)
                 .ToList();
 
-            Logger.Log(
+            await Logger.Log(
                 $"Read entirely {htmlNodes.Count} sub-elements, now filter them!");
 
 
@@ -51,12 +59,9 @@ namespace CheckWebsiteStatus.Scheduler
 
             var elementTasks = ReadAndProcessSubElements(cssNodes.Concat(srcNodes));
 
-            await Task.WhenAll(elementTasks).ContinueWith(_ =>
-            {
-                Logger.Log("Finished Task");
-            });
+            await Task.WhenAll(elementTasks).ContinueWith(_ => { Logger.Log("Finished Task"); });
         }
-        
+
         private IEnumerable<Task> ReadAndProcessSubElements(IEnumerable<HtmlNode> htmlNodes)
         {
             var nodes = htmlNodes.ToList();
@@ -91,8 +96,10 @@ namespace CheckWebsiteStatus.Scheduler
 
         private static async Task GetResponseForSubElement(string url, string acceptHeader, ElementType elementType)
         {
-
+            Stopwatch sw = Stopwatch.StartNew();
+            sw.Start();
             var response = await GetResponseFromUri(url, acceptHeader);
+            sw.Stop();
             if (response.StatusCode == HttpStatusCode.OK)
             {
                 var elementSize = elementType switch
@@ -102,13 +109,13 @@ namespace CheckWebsiteStatus.Scheduler
                     _ => 0L
                 };
 
-                Logger.Log(
-                    $"GET {url} : S {response.StatusCode.ToString()} : C {response.Headers["cf-cache-status"]} : L {elementSize}");
+                await Logger.Log(
+                    $"{sw.ElapsedMilliseconds}ms :: GET {url} : S {response.StatusCode.ToString()} : C {response.Headers["cf-cache-status"]} : L {elementSize}");
             }
             else
             {
-                Logger.Log(
-                    $"Could not get a valid ReturnCode from Element <{url}>. ReturnCode is {response.StatusCode}");
+                await Logger.Log(
+                    $"{sw.ElapsedMilliseconds}ms :: Could not get a valid ReturnCode from Element <{url}>. ReturnCode is {response.StatusCode}");
             }
 
             response.Close();
@@ -128,7 +135,7 @@ namespace CheckWebsiteStatus.Scheduler
             doc.Load(response.GetResponseStream());
             doc.OptionEmptyCollection = true;
 
-            Logger.Log(
+            await Logger.Log(
                 $"GET {url} :: {status.ToString()} : C {headers["cf-cache-status"]} : S {doc.Text.Length}");
 
 
@@ -158,7 +165,6 @@ namespace CheckWebsiteStatus.Scheduler
                 .Where(node => node.Attributes["href"].Value.StartsWith("https://www.dimatec.de"));
 
             return new List<IEnumerable<HtmlNode>> {elementsImg, elementsCss, elementsJs}.SelectMany(x => x);
-
         }
 
         private static long GetImageSize(Stream responseStream)
@@ -196,7 +202,6 @@ namespace CheckWebsiteStatus.Scheduler
             xmlDocument.Load(new XmlTextReader(url));
             XmlNodeList xnList = xmlDocument.GetElementsByTagName("url");
             return (from XmlNode node in xnList select node["loc"].InnerText).ToList();
-
         }
     }
 }

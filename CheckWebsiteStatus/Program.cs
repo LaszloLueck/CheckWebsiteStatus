@@ -16,22 +16,25 @@ namespace CheckWebsiteStatus
 
         static async Task Main(string[] args)
         {
-            Logger.Log("Start program");
+            await Logger.Log("Start program");
 
-            Logger.Log("Load Configuration");
+            await Logger.Log("Load Configuration");
             IConfigurationFactory configurationFactory = new ConfigurationFactory();
             ConfigurationBuilder configurationBuilder = new ConfigurationBuilder(configurationFactory);
 
             var a = configurationBuilder.GetConfiguration().Map(configuration =>
             {
-                Logger.Log("successfully loaded configuration!");
-                Logger.Log("Load and start scheduler");
-                ISchedulerFactory schedulerFactory =
-                    new CustomSchedulerFactory<SchedulerJob>("job1", "group1", "trigger1", 600, configuration);
+                Task.Run(async () =>
+                {
+                    await Logger.Log("successfully loaded configuration!");
+                    await Logger.Log("Load and start scheduler");
+                    ISchedulerFactory schedulerFactory =
+                        new CustomSchedulerFactory<SchedulerJob>("job1", "group1", "trigger1", 600, configuration);
 
-                schedulerFactory.RunScheduler();
+                    await schedulerFactory.RunScheduler();
 
-                Logger.Log("App is in running state!");
+                    await Logger.Log("App is in running state!");
+                });
                 return Task.Delay(-1);
             }).ValueOr(() => Task.CompletedTask);
 

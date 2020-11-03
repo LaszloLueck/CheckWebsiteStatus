@@ -1,20 +1,22 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace CheckWebsiteStatus.SimpleLogger
 {
 
     public interface ICLogger
     {
-        void Log(string message);
+        Task Log(string message);
 
     }
 
     public class IccLogger<T> : ICLogger
     {
-        public void Log(string message)
+        public async Task Log(string message)
         {
             var lineToPrint = $"{DateTime.Now} :: {typeof(T).Name} : {message}";
-            Console.WriteLine(lineToPrint);
+            //Console.WriteLine(lineToPrint);
+            await Console.Out.WriteLineAsync(lineToPrint);
         }
     }
     

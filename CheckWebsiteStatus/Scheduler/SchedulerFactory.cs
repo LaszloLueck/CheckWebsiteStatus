@@ -38,7 +38,7 @@ namespace CheckWebsiteStatus.Scheduler
 
         private async Task BuildScheduler()
         {
-            Logger.Log("Build the Scheduler");
+            await Logger.Log("Build the Scheduler");
             _scheduler = await _factory.GetScheduler();
         }
 
@@ -63,13 +63,13 @@ namespace CheckWebsiteStatus.Scheduler
 
         private async Task StartScheduler()
         {
-            Logger.Log("Start the Scheduler");
+            await Logger.Log("Start the Scheduler");
             await _scheduler.Start();
         }
 
         private async Task ScheduleJob()
         {
-            Logger.Log("Schedule the Job");
+            await Logger.Log("Schedule the Job");
             var job = GetJob();
             job.JobDataMap.Put("configuration", _configurationItems);
             var trigger = GetTrigger();
