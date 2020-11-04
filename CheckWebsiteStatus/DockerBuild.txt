@@ -1,0 +1,5 @@
+For docker build from this project you must use:
+docker build https://github.com/LaszloLueck/CheckWebsiteStatus.git#master:CheckWebsiteStatus -t checkwebsitestatus:latest
+
+And start the container with:
+ docker run --name checkwebsitestatus -d -e "SitemapUrl=https://www.dimatec.de/page-sitemap.xml" -e "RunsEvery=1800" checkwebsitestatus:latest
