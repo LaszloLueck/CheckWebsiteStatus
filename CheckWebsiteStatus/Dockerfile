@@ -1,7 +1,7 @@
 FROM mcr.microsoft.com/dotnet/core/sdk:3.1 AS build-env
 LABEL MAINTAINER="Laszlo Lueck <llueck@gmail.com>"
 WORKDIR /app
-COPY *.csproj ./
+COPY /CheckWebsiteStatus.csproj ./
 RUN dotnet restore
 
 COPY . ./
